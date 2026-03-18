@@ -1,0 +1,45 @@
+name: ai_readiness_advisor
+version: "1.0.0"
+description: >
+  Enterprise AI Readiness Assessment Skill.
+  Evaluates an organization's data estate across 8 critical dimensions
+  and produces a composite AI Readiness Score (0-100) with a detailed
+  action plan to close gaps and accelerate AI adoption on Snowflake.
+
+author: CoCoDuo
+platform: snowflake
+
+skill_definition: SKILL.md
+
+resources:
+  scoring:
+    - resources/scoring/data_quality.md
+    - resources/scoring/data_governance.md
+    - resources/scoring/security_compliance.md
+    - resources/scoring/ai_consumption_readiness.md
+    - resources/scoring/data_freshness.md
+    - resources/scoring/metadata_lineage.md
+    - resources/scoring/infrastructure_scalability.md
+    - resources/scoring/organizational_readiness.md
+  action_plans:
+    - resources/action_plans/data_quality.md
+    - resources/action_plans/data_governance.md
+    - resources/action_plans/security_compliance.md
+    - resources/action_plans/ai_consumption_readiness.md
+    - resources/action_plans/data_freshness.md
+    - resources/action_plans/metadata_lineage.md
+    - resources/action_plans/infrastructure_scalability.md
+    - resources/action_plans/organizational_readiness.md
+  templates:
+    - resources/templates/rbac_hierarchy.md
+    - resources/templates/governance_tags.md
+    - resources/templates/masking_policies.md
+    - resources/templates/security_policies.md
+    - resources/templates/constraints.md
+
+tools:
+  assessment_probes: tools/assessment/sql/
+  scoring_engine: tools/assessment/scoring_engine.py
+  probe_interpreters: tools/assessment/probe_interpreters.py
+  action_plan_generator: tools/action_plan/plan_generator.py
+  orchestrator: tools/orchestrator.py
