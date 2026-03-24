@@ -85,11 +85,11 @@ Before writing ANY plan, check for gaps in the assessment data. If ANY of these 
 
 ### Step 4: Generate the Plan as JSON
 
-After analysis, construct a structured JSON plan object. This JSON is the single source of truth that will be written to a file and consumed by the PDF generator notebook.
+After analysis, construct a structured JSON plan object. This JSON is the **single source of truth** consumed by the renderer notebook. ALL business logic, analysis, and recommendations MUST be computed here — the notebook is a pure renderer with zero business logic.
 
-**Write the JSON file to:** `/workspace/migration_plan_<assessment_id>.json`
+**Write the JSON file to:** `/tmp/migration_plan_<assessment_id>.json` (This maps to the workspace's `tmp/` directory and is readable by the notebook)
 
-The JSON structure MUST follow this exact schema:
+The JSON structure MUST follow this exact schema. Every field is required unless marked (optional):
 
 ```json
 {
@@ -99,114 +99,190 @@ The JSON structure MUST follow this exact schema:
     "sa_name": "...",
     "sa_email": "...",
     "industry": "...",
-    "generated_date": "YYYY-MM-DD",
+    "generated_date": "March 24, 2026",
     "generated_by": "kipi.ai CoCoDuo Migration Expert"
   },
+  "compliance_list": ["SOC 2", "PCI DSS", "SOX", "GDPR"],
   "executive_summary": {
-    "overview": "paragraph text...",
-    "drivers": "paragraph text...",
-    "approach": "paragraph text...",
+    "overview": "1-2 sentence summary: customer name, source systems with sizes, target Snowflake edition + region, total volume, table count, SP count, key characteristic (e.g. zero-downtime, real-time)",
+    "drivers": "Drivers: comma-separated list from assessment.",
+    "approach": "Migration approach + timeline + architecture pattern + budget context. E.g. 'Phased over 12 months. Data Vault 2.0 for SOX audit trail. Budget: Moderate — board mandate to reduce TCO by 30%.'",
+    "reference": "(optional) 'Validated architecture based on N reference customer(s) in [Industry] with similar migrations.'",
     "key_metrics": [
-      {"metric": "...", "value": "..."},
-      ...
+      {"metric": "Total Data Volume", "value": "120 TB across 2 systems"},
+      {"metric": "Total Tables", "value": "15,400"},
+      {"metric": "Stored Procedures", "value": "770+"},
+      {"metric": "Active Users", "value": "850"},
+      {"metric": "Daily Queries", "value": "450,000"},
+      {"metric": "CDC Tables", "value": "2,200"},
+      {"metric": "Compliance", "value": "SOC 2, PCI DSS, SOX, GDPR"},
+      {"metric": "Timeline", "value": "48 Weeks (12 Months)"},
+      {"metric": "Budget Sensitivity", "value": "Moderate"}
     ]
   },
   "current_state": {
     "source_systems": [
-      {"name": "...", "version": "...", "size": "...", "tables": "...", "complexity": "...", "annual_cost": "..."},
-      ...
+      {"name": "Teradata", "version": "17.10 on IntelliFlex", "size": "85 TB", "tables": "10,000", "complexity": "580 BTEQ, 420 FastLoad/MLoad, 320 SPs, 180 Macros"},
+      {"name": "SQL Server", "version": "2019 Enterprise", "size": "35 TB", "tables": "5,400", "complexity": "450 SPs, 120 SSIS, 280 SSRS, 8 SSAS Cubes"}
     ],
     "tool_landscape": [
-      {"category": "...", "tool": "...", "pipelines": "...", "satisfaction": "...", "cost": "...", "action": "..."},
-      ...
+      {"category": "ETL", "tool": "Informatica Cloud (IDMC)", "pipelines": "380", "satisfaction": "Neutral", "action": "Considering alternatives", "notes": "$520K/yr, evaluating Fivetran/Matillion"},
+      {"category": "ETL", "tool": "Ab Initio", "pipelines": "280", "satisfaction": "Dissatisfied", "action": "Replace", "notes": "$700K/yr, CTO mandate to decommission"}
     ],
-    "pain_points": ["...", "..."]
+    "pain_points": ["Free-text pain points from nuances_data.tooling_concerns", "From nuances_data.technical_debt", "From nuances_data.cost_priorities"]
   },
   "target_architecture": {
-    "account_edition": {"edition": "...", "cloud_region": "...", "account_structure": "...", "justification": "..."},
+    "account_edition": {
+      "edition": "Business Critical",
+      "cloud_region": "Azure - East US 2",
+      "account_structure": "Single account — DEV/STAGING/PROD via database CLONE.",
+      "justification": "Why this edition — compliance requirements, Tri-Secret Secure, Private Link, etc."
+    },
     "data_architecture": {
-      "pattern": "Medallion / Data Vault / Star Schema / Data Mesh",
-      "description": "...",
+      "pattern": "Data Vault 2.0 Architecture",
+      "description": "1-2 sentences explaining the pattern choice and how data flows.",
       "schemas": [
-        {"name": "...", "purpose": "...", "contents": "..."},
-        ...
+        {"name": "RAW_VAULT", "purpose": "Hubs, Links, Satellites (immutable audit trail)"},
+        {"name": "BUSINESS_VAULT", "purpose": "PIT tables, Bridge tables, business rules"},
+        {"name": "INFORMATION_MARTS", "purpose": "Star schema data marts for BI"},
+        {"name": "STAGING", "purpose": "Transient staging for inbound data"}
       ]
     },
-    "multi_tenancy": {"pattern": "MTT / OPT / APT / N/A", "description": "..."},
+    "multi_tenancy": {"pattern": "Schema-per-Business-Unit", "description": "Explanation of tenancy approach."},
+    "streaming_architecture": "(optional) Description of real-time streaming layer if applicable. E.g. 'Confluent Cloud Kafka → Snowpipe Streaming for real-time trade data.'",
+    "data_sharing": "(optional) Snowflake Data Sharing use cases if customer needs it.",
+    "archival": "(optional) Iceberg Tables or cold storage strategy for long-term retention.",
     "warehouses": [
-      {"name": "...", "size": "...", "auto_suspend": "...", "purpose": "...", "est_monthly": "..."},
-      ...
-    ],
-    "warehouse_notes": "..."
+      {"name": "WH_STREAMING_INGEST", "size": "Small", "auto_suspend": "Always On", "purpose": "Real-time ingestion via Snowpipe Streaming", "est_monthly": "~$3,000"},
+      {"name": "WH_BATCH_LOADING", "size": "Large", "auto_suspend": "60s", "purpose": "Bulk historical migration", "est_monthly": "~$2,000"},
+      {"name": "WH_TRANSFORM", "size": "Large (MC 1-3)", "auto_suspend": "120s", "purpose": "dbt transformations, EOD batch", "est_monthly": "~$8,000"},
+      {"name": "WH_BI_GENERAL", "size": "Medium (MC 1-3)", "auto_suspend": "300s", "purpose": "BI tool queries", "est_monthly": "~$4,000"},
+      {"name": "WH_DEV", "size": "Small", "auto_suspend": "60s", "purpose": "Development and CI/CD", "est_monthly": "~$500"}
+    ]
   },
+  "tool_comparisons": [
+    {
+      "category": "Data Ingestion / ELT",
+      "cards": [
+        {"name": "Fivetran"},
+        {"name": "Airbyte"}
+      ],
+      "recommended": "Fivetran",
+      "verdict": "Customer-specific justification grounded in SA inputs, nuances, satisfaction ratings."
+    }
+  ],
   "recommended_tools": {
     "tools": [
-      {"category": "...", "tool": "...", "justification": "...", "est_annual_cost": "..."},
-      ...
+      {"category": "Real-Time Ingestion", "tool": "Confluent Kafka + Snowpipe Streaming", "justification": "Customer-specific reason", "est_annual_cost": "Existing license + credits"},
+      {"category": "ETL (Replace Ab Initio)", "tool": "dbt Cloud + Snowpipe Streaming", "justification": "Replaces $700K/yr Ab Initio", "est_annual_cost": "~$100,000"}
     ],
     "cost_comparison": {
-      "current_items": [{"item": "...", "cost": "..."}],
-      "future_items": [{"item": "...", "cost": "..."}],
-      "total_current": "...",
-      "total_future": "...",
-      "savings": "...",
-      "savings_pct": "..."
+      "current_items": [{"item": "Teradata Lease", "cost": "$2,800,000/yr"}, {"item": "Ab Initio", "cost": "$700,000/yr"}],
+      "future_items": [{"item": "Snowflake Business Critical", "cost": "~$600,000/yr"}, {"item": "dbt Cloud", "cost": "~$100,000/yr"}],
+      "total_current": "$4,700,000/yr",
+      "total_future": "~$1,000,000/yr",
+      "savings": "~$3,700,000/yr",
+      "savings_pct": "79%"
     }
   },
   "migration_phases": [
     {
       "phase_num": 0,
-      "title": "...",
-      "weeks": "Weeks X-Y",
-      "tasks": ["...", "..."]
-    },
-    ...
+      "title": "Foundation & Compliance Audit",
+      "weeks": "Weeks 1-8",
+      "tasks": ["Account provisioning", "Network setup", "RBAC design", "Schema design", "Compliance audit kickoff"]
+    }
   ],
-  "source_playbooks": [
-    {
-      "source": "...",
-      "key_actions": ["...", "..."]
-    },
-    ...
+  "performance_slas": [
+    {"kpi": "Trade Reconciliation", "current": "~15 seconds", "target": "<10 seconds", "approach": "Clustering keys on trade_date + instrument_id"}
   ],
   "security_compliance": [
-    {"requirement": "...", "implementation": "..."},
-    ...
+    {"requirement": "SOX Compliance", "implementation": "Data Vault satellites for immutable audit trail. Query logging via Account Usage."},
+    {"requirement": "Dynamic Data Masking", "implementation": "PII masking with role-based policies."}
   ],
   "risks": [
-    {"risk": "...", "severity": "CRITICAL / High / Medium / Low", "mitigation": "..."},
-    ...
+    {"risk": "Zero-downtime cutover for 24/7 operations", "severity": "CRITICAL", "mitigation": "Dual-write pattern via Kafka. Validated at reference customer."},
+    {"risk": "Vendor termination clause delays timeline", "severity": "High", "mitigation": "Submit termination notice in Week 1."}
   ],
   "success_criteria": [
-    {"kpi": "...", "target": "...", "measurement": "..."},
-    ...
+    {"kpi": "Data Validation", "target": "100% row count, 99.99% checksum", "measurement": "Automated reconciliation"},
+    {"kpi": "Cost Reduction", "target": "30%+ TCO reduction", "measurement": "Snowflake billing vs legacy"}
   ],
-  "next_steps": ["...", "..."]
+  "next_steps": ["Kickoff meeting with executive sponsor", "Account provisioning", "Network connectivity setup"],
+  "reference_architectures": [
+    {
+      "name": "Global Trading Firm (anonymized)",
+      "industry": "Financial Services / Banking",
+      "summary": "Consolidated Teradata (100 TB) + SQL Server (40 TB) onto Snowflake Business Critical on Azure.",
+      "lessons": "Zero-downtime cutover was critical. Dual-write via Kafka was the key pattern.",
+      "metrics": {"cost_reduction": "72%", "zero_downtime": "Achieved"}
+    }
+  ]
 }
 ```
+
+### SECTION-BUILDING GUIDANCE (Follow for EVERY plan)
+
+#### Architecture Pattern Selection
+Decide the data architecture pattern based on these rules:
+- **Data Vault 2.0**: Use when SOX compliance is required, OR nuances mention "audit trail", "data vault", OR financial services with regulatory reporting. Schemas: RAW_VAULT → BUSINESS_VAULT → INFORMATION_MARTS → STAGING.
+- **Medallion (Bronze/Silver/Gold)**: Use for most other cases, especially healthcare, retail, tech. Schemas: BRONZE → SILVER → GOLD → SANDBOX.
+- **Star Schema**: Use when the customer explicitly requests it or has a simple analytics-only use case.
+
+#### Warehouse Strategy
+Design purpose-built warehouses based on workload analysis:
+- **Always include**: WH_BATCH_LOADING (Large, 60s suspend), WH_TRANSFORM (sized to workload), WH_BI_GENERAL (Medium MC), WH_DEV (Small, 60s).
+- **If real-time/streaming**: Add WH_STREAMING_INGEST (Small, always on).
+- **If trading/analytics with SLAs**: Add dedicated WH for that workload (X-Large MC for trading dashboards).
+- **If ML/risk models**: Add WH_RISK_MODELS or WH_ML (X-Large).
+- **If regulatory reporting**: Add WH_REGULATORY (Medium).
+- **Size est_monthly** based on: Small ~$500, Medium ~$2-4K, Large ~$5-8K, X-Large ~$10-15K, with MC multipliers.
+
+#### TCO Comparison (MUST INCLUDE)
+Build a detailed cost comparison:
+- **Current items**: Extract from ETL_DATA.annual_etl_cost and annual_infra_cost. Break down by system/tool.
+- **Future items**: Project Snowflake credits (based on warehouse strategy), tool licensing (dbt Cloud ~$100K, Fivetran ~$150-250K, Airflow MWAA ~$30K, etc.).
+- **Savings**: Calculate total_current - total_future. Express as both dollar amount and percentage.
+- **The board/CFO cares about this section.** Be specific with numbers, not vague.
+
+#### Performance SLAs
+Include this section whenever NUANCES_DATA.performance_requirements exists:
+- Extract specific KPIs from performance_requirements text.
+- For each: state current performance, target SLA, and the Snowflake approach to achieve it.
+- Common patterns: clustering keys for query speed, MC warehouses for concurrency, Snowpipe Streaming for ingestion latency.
+
+#### Risk Register
+Always include risks. Severity levels: CRITICAL (blocks go-live), High (delays timeline), Medium (manageable), Low (awareness).
+- **Always check for**: zero-downtime requirements, vendor termination clauses, team resistance, compliance audit timelines, cross-system dependencies, SP conversion complexity.
+- **Reference similar customer lessons** from REFERENCE_ARCHITECTURES when available.
+
+#### Reference Architectures
+Include matching reference architectures from the database query. For each:
+- Include name, industry, summary, lessons learned, and success metrics.
+- These provide credibility and risk reduction — customers want to know others have done this before.
 
 ### Step 5: Write the JSON File
 
 Use the `write` tool to save the JSON plan:
-- **Path:** `/workspace/migration_plan_<assessment_id>.json`
-- The JSON must be valid and complete.
+- **Path:** `/tmp/migration_plan_<assessment_id>.json`
 
-### Step 6: Generate the PDF
+### Step 6: Generate the HTML Report
 
-After writing the JSON, open and run the PDF generator notebook:
+After writing the JSON, configure and run the renderer notebook:
 
-1. Open `/workspace/Migration_Plan_Generator.ipynb`
-2. Edit the first cell to set the JSON file path:
+1. Edit the `PLAN_JSON_FILE` cell in `/Migration_Plan_Generator.ipynb` to the filename:
    ```python
-   PLAN_JSON_PATH = "/workspace/migration_plan_<assessment_id>.json"
+   PLAN_JSON_FILE = "migration_plan_<assessment_id>.json"
    ```
-3. Run all cells in the notebook
-4. The PDF will be generated at `/workspace/<CustomerName>_Migration_Plan.pdf`
+2. **Run All cells** in the notebook. The notebook is a pure renderer — it reads the JSON, enriches tool comparison cards from its built-in TOOL_DB, applies kipi.ai branded CSS, and generates an HTML file.
+3. The HTML is uploaded to `@MIGRATION_ASSESSMENTS.INTAKE.MIGRATION_PLANS/<CustomerName>_Migration_Plan.html`.
+4. **DO NOT modify any other cell in the notebook.** All intelligence lives in the JSON. The notebook is a template.
 
 ### Step 7: Deliver to User
 
 Confirm to the user:
-- The PDF has been generated at the workspace path
+- The HTML report has been generated and staged
+- Provide the presigned URL query: `SELECT GET_PRESIGNED_URL(@MIGRATION_ASSESSMENTS.INTAKE.MIGRATION_PLANS, '<filename>.html', 3600);`
 - Summarize the key recommendations in 3-5 bullet points
 - Ask if they want any section expanded or revised
 
@@ -228,8 +304,9 @@ The skill is the **brain** for all tool decisions. The notebook is only the **re
 1. **Read `tool-profiles.md` FIRST** — it contains ratings, pros, cons, costs, and decision criteria for every tool.
 2. **Filter candidates** based on customer context (budget, team size, compliance, current tools, nuances).
 3. **Build comparison data** with: tool name, tag, 4 ratings (sf_fit, ease, enterprise, cost), strengths (green), watchouts (red), and a customer-specific verdict.
-4. **Pass the structured comparison data** to the notebook for rendering — the notebook should NOT contain tool knowledge, only rendering logic.
-5. **Evolve this knowledge** — each time you encounter new information about tools (pricing changes, new features, customer feedback), note it for the kipian to update tool-profiles.md.
+4. **CRITICAL — Card names in `tool_comparisons[].cards[].name` MUST exactly match the notebook's TOOL_DB keys.** The notebook enriches cards by matching the `name` field. If the name doesn't match, the card renders BLANK (no ratings, no strengths, no watchouts). Valid TOOL_DB keys include: `Airbyte`, `Fivetran`, `Matillion`, `Informatica Cloud (IDMC)`, `AWS Glue`, `Azure Data Factory (ADF)`, `dbt-core`, `dbt Cloud`, `Snowpark (Python / Java / Scala)`, `Coalesce`, `Tableau`, `Sigma Computing`, `Power BI`, `Metabase`, `Apache Superset`, `Streamlit`, `Apache Airflow / MWAA`, `Snowflake Tasks & Streams`, `Dagster`, `Snowflake Horizon (native)`, `Collibra`, `Monte Carlo`, `Great Expectations`, `Soda`, `Snowflake Native Ingestion`, `Custom Scripts (Python/Spark)`, `ThoughtSpot`, `Looker`, `Prefect`, `Control-M`, `Ab Initio`, `Informatica PowerCenter`, `SQLMesh`. **Do NOT use compound names like "Metabase / Apache Superset" — use one tool per card.** If you need to recommend a combination, use separate cards for each tool.
+5. **Pass the structured comparison data** to the notebook for rendering — the notebook should NOT contain tool knowledge, only rendering logic.
+6. **Evolve this knowledge** — each time you encounter new information about tools (pricing changes, new features, customer feedback), note it for the kipian to update tool-profiles.md.
 
 ### Reference Materials (MUST READ for context)
 These files contain real-world reference architectures and tool comparisons uploaded by kipians. Read and incorporate insights from:
@@ -247,21 +324,23 @@ These files contain real-world reference architectures and tool comparisons uplo
 
 The plan MUST include all sections below. Keep it **visual, crisp, and scannable** — NO long paragraphs.
 
-1. **Snapshot** — Metric cards grid (data volume, tables, SPs, users, queries, CDC, timeline, budget). Source/compliance/driver tags.
-2. **Current State** — Compact tables for source systems and ETL tools. Bullet-point pain points (max 2 lines each).
-3. **Target Architecture** — Edition + region as tags. Schema flow diagram (visual boxes with arrows). Warehouse table.
-4. **Recommended Stack — with Detailed Comparisons** — For each tool category (Ingestion/ETL, Transformation, Orchestration, BI), produce a side-by-side comparison card layout:
+1. **Executive Summary** — Overview paragraph, drivers, approach, reference customer callout.
+2. **Snapshot** — Metric cards grid (data volume, tables, SPs, users, queries, CDC, timeline, budget). Source/compliance/driver tags.
+3. **Current State** — Compact tables for source systems and ETL tools. Bullet-point pain points (max 2 lines each).
+4. **Target Architecture** — Edition + region as tags. Schema flow diagram (visual boxes with arrows). Streaming architecture, data sharing, archival strategy (if applicable). Warehouse table with est_monthly costs.
+5. **Recommended Stack — with Detailed Comparisons** — For each tool category (Ingestion/ETL, Transformation, Orchestration, BI, Governance), produce a side-by-side comparison card layout:
    - Show 2-3 relevant tools per category as comparison cards
    - Each card includes: tool name, tag (e.g. "Best for cost-sensitive"), fit scores (Snowflake fit, ease of use, enterprise depth, total cost) as rating bars out of 10, strengths (green dots), watch-outs (red dots)
-   - Below the cards: "When to pick which" decision cards with specific scenarios
-   - Then a **Verdict** paragraph explaining YOUR recommendation for THIS customer, grounded in their assessment data (budget, team size, existing tools, satisfaction ratings, nuances)
-   - Reference `$SKILL_BASE_PATH/knowledge/references/matillion_vs_informatica_vs_adf_snowflake.html` for the exact visual format and rating approach
-   - Cost comparison table (current vs future)
-5. **Migration Timeline** — Vertical timeline with phase dots, titles, weeks, and max 5 bullet tasks per phase.
-6. **Security & Compliance** — Card grid (requirement + implementation, max 2 lines each).
-7. **Risks** — Two-column risk cards with severity color-coding and one-line mitigation.
-8. **Success Criteria** — Clean KPI rows (name | target | measurement) — no table borders, just rows.
-9. **Next Steps** — Numbered circles with one-line actions.
+   - Then a **Verdict** paragraph explaining YOUR recommendation for THIS customer, grounded in their assessment data
+   - The notebook's TOOL_DB enriches cards with ratings/strengths/watchouts — you only need to provide `name` and optionally override scores
+6. **TCO Comparison** — Metric cards for current/future/savings/percentage. Itemized current state costs and future state costs tables. **This section is critical for executive buy-in.**
+7. **Migration Timeline** — Vertical timeline with phase dots, titles, weeks, and task bullets per phase.
+8. **Performance SLAs** — Table of KPI | Current | Target SLA | Approach. Include whenever performance requirements exist in nuances.
+9. **Security & Compliance** — Card grid (requirement + implementation, max 2 lines each).
+10. **Risks** — Two-column risk cards with severity color-coding and one-line mitigation.
+11. **Success Criteria** — Clean KPI rows (name | target | measurement) — no table borders, just rows.
+12. **Next Steps** — Numbered circles with one-line actions.
+13. **Reference Architectures** — Similar customer case studies with lessons learned and success metrics.
 
 ### OUTPUT STYLE RULES
 - **No paragraphs longer than 2 lines.** If it takes more, use bullets or a table.
