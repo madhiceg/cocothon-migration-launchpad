@@ -1,0 +1,122 @@
+<style>
+.tool-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.tool-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:16px}
+.tool-card.featured{border:2px solid var(--color-border-info)}
+.tool-name{font-size:15px;font-weight:500;color:var(--color-text-primary);margin:0 0 2px}
+.tool-tag{font-size:11px;padding:3px 8px;border-radius:6px;display:inline-block;margin-bottom:10px;font-weight:500}
+.tag-blue{background:var(--color-background-info);color:var(--color-text-info)}
+.tag-amber{background:var(--color-background-warning);color:var(--color-text-warning)}
+.tag-teal{background:#E1F5EE;color:#085041}
+.score-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px}
+.score-label{color:var(--color-text-secondary);flex:1}
+.score-bar-bg{width:80px;height:6px;background:var(--color-border-tertiary);border-radius:3px;overflow:hidden;margin:0 8px}
+.score-bar{height:100%;border-radius:3px}
+.bar-blue{background:#378ADD}
+.bar-amber{background:#BA7517}
+.bar-teal{background:#1D9E75}
+.score-val{font-size:11px;color:var(--color-text-secondary);min-width:24px;text-align:right}
+.divider{border:none;border-top:0.5px solid var(--color-border-tertiary);margin:10px 0}
+.pro{font-size:12px;color:var(--color-text-primary);margin:3px 0;padding-left:10px;position:relative}
+.pro::before{content:"";position:absolute;left:0;top:6px;width:5px;height:5px;border-radius:50%;background:#1D9E75}
+.con{font-size:12px;color:var(--color-text-secondary);margin:3px 0;padding-left:10px;position:relative}
+.con::before{content:"";position:absolute;left:0;top:6px;width:5px;height:5px;border-radius:50%;background:#E24B4A}
+.section-label{font-size:11px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px}
+.dec-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.dec-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px;font-size:12px}
+.dec-title{font-weight:500;font-size:13px;color:var(--color-text-primary);margin-bottom:6px}
+.dec-item{color:var(--color-text-secondary);margin:3px 0;padding-left:10px;position:relative}
+.dec-item::before{content:"→";position:absolute;left:0;color:var(--color-text-tertiary);font-size:11px}
+</style>
+
+<div class="tool-grid">
+  <div class="tool-card featured">
+    <p class="tool-name">Matillion</p>
+    <span class="tool-tag tag-blue">Best for Snowflake-native</span>
+    <div class="section-label">Fit scores</div>
+    <div class="score-row"><span class="score-label">Snowflake fit</span><div class="score-bar-bg"><div class="score-bar bar-blue" style="width:96%"></div></div><span class="score-val">9.6</span></div>
+    <div class="score-row"><span class="score-label">Ease of use</span><div class="score-bar-bg"><div class="score-bar bar-blue" style="width:88%"></div></div><span class="score-val">8.8</span></div>
+    <div class="score-row"><span class="score-label">Enterprise depth</span><div class="score-bar-bg"><div class="score-bar bar-blue" style="width:70%"></div></div><span class="score-val">7.0</span></div>
+    <div class="score-row"><span class="score-label">Total cost</span><div class="score-bar-bg"><div class="score-bar bar-blue" style="width:75%"></div></div><span class="score-val">$$</span></div>
+    <hr class="divider"/>
+    <div class="section-label">Strengths</div>
+    <p class="pro">Push-down ELT — runs SQL inside Snowflake</p>
+    <p class="pro">Visual + code (Python/SQL) hybrid</p>
+    <p class="pro">Git-native, CI/CD friendly</p>
+    <p class="pro">Fastest time-to-value for net-new builds</p>
+    <hr class="divider"/>
+    <div class="section-label">Watch out</div>
+    <p class="con">Limited for mainframe / COBOL sources</p>
+    <p class="con">Thinner on legacy data quality rules</p>
+    <p class="con">Smaller enterprise support org than Informatica</p>
+  </div>
+
+  <div class="tool-card">
+    <p class="tool-name">Informatica IDMC</p>
+    <span class="tool-tag tag-amber">Best for enterprise / legacy</span>
+    <div class="section-label">Fit scores</div>
+    <div class="score-row"><span class="score-label">Snowflake fit</span><div class="score-bar-bg"><div class="score-bar bar-amber" style="width:75%"></div></div><span class="score-val">7.5</span></div>
+    <div class="score-row"><span class="score-label">Ease of use</span><div class="score-bar-bg"><div class="score-bar bar-amber" style="width:60%"></div></div><span class="score-val">6.0</span></div>
+    <div class="score-row"><span class="score-label">Enterprise depth</span><div class="score-bar-bg"><div class="score-bar bar-amber" style="width:98%"></div></div><span class="score-val">9.8</span></div>
+    <div class="score-row"><span class="score-label">Total cost</span><div class="score-bar-bg"><div class="score-bar bar-amber" style="width:50%"></div></div><span class="score-val">$$$$</span></div>
+    <hr class="divider"/>
+    <div class="section-label">Strengths</div>
+    <p class="pro">200+ native connectors incl. mainframe, SAP</p>
+    <p class="pro">Enterprise DQ, MDM, data governance baked in</p>
+    <p class="pro">Strong Teradata / Oracle migration heritage</p>
+    <p class="pro">CLAIRE AI for schema auto-mapping</p>
+    <hr class="divider"/>
+    <div class="section-label">Watch out</div>
+    <p class="con">High licensing cost — often overkill for mid-market</p>
+    <p class="con">Steep learning curve, heavy admin overhead</p>
+    <p class="con">ELT push-down less mature than Matillion</p>
+  </div>
+
+  <div class="tool-card">
+    <p class="tool-name">Azure Data Factory</p>
+    <span class="tool-tag tag-teal">Best for Azure-first shops</span>
+    <div class="section-label">Fit scores</div>
+    <div class="score-row"><span class="score-label">Snowflake fit</span><div class="score-bar-bg"><div class="score-bar bar-teal" style="width:72%"></div></div><span class="score-val">7.2</span></div>
+    <div class="score-row"><span class="score-label">Ease of use</span><div class="score-bar-bg"><div class="score-bar bar-teal" style="width:70%"></div></div><span class="score-val">7.0</span></div>
+    <div class="score-row"><span class="score-label">Enterprise depth</span><div class="score-bar-bg"><div class="score-bar bar-teal" style="width:80%"></div></div><span class="score-val">8.0</span></div>
+    <div class="score-row"><span class="score-label">Total cost</span><div class="score-bar-bg"><div class="score-bar bar-teal" style="width:88%"></div></div><span class="score-val">$</span></div>
+    <hr class="divider"/>
+    <div class="section-label">Strengths</div>
+    <p class="pro">Near-zero marginal cost if Azure EA already in place</p>
+    <p class="pro">Deep Azure Blob, ADLS, Synapse integration</p>
+    <p class="pro">Managed IR for hybrid/on-prem sources</p>
+    <p class="pro">Familiar for teams migrating from SSIS</p>
+    <hr class="divider"/>
+    <div class="section-label">Watch out</div>
+    <p class="con">Snowflake connector is "good enough," not native</p>
+    <p class="con">Transformation logic lives in Databricks/dbt, not ADF</p>
+    <p class="con">Not ideal for non-Azure multi-cloud setups</p>
+  </div>
+</div>
+
+<div class="section-label" style="margin-bottom:8px">When to pick which</div>
+<div class="dec-grid">
+  <div class="dec-card">
+    <div class="dec-title" style="color:#185FA5">Pick Matillion when…</div>
+    <p class="dec-item">Net-new Snowflake build (greenfield)</p>
+    <p class="dec-item">Team wants low-code + SQL/Python flex</p>
+    <p class="dec-item">Sources are cloud DBs, SaaS, APIs</p>
+    <p class="dec-item">You want ELT, not ETL staging</p>
+    <p class="dec-item">CI/CD and GitOps are non-negotiable</p>
+  </div>
+  <div class="dec-card">
+    <div class="dec-title" style="color:#854F0B">Pick Informatica when…</div>
+    <p class="dec-item">Migrating Teradata, Oracle, SAP, mainframe</p>
+    <p class="dec-item">Complex data quality rules must carry over</p>
+    <p class="dec-item">MDM or data governance is in scope</p>
+    <p class="dec-item">Existing Informatica IICS/PowerCenter estate</p>
+    <p class="dec-item">Regulated industry (BFSI, pharma, telco)</p>
+  </div>
+  <div class="dec-card">
+    <div class="dec-title" style="color:#085041">Pick ADF when…</div>
+    <p class="dec-item">Azure is primary cloud and EA covers cost</p>
+    <p class="dec-item">Migrating from SSIS pipelines</p>
+    <p class="dec-item">Heavy use of ADLS / Azure Blob as staging</p>
+    <p class="dec-item">Team already skilled in Azure ecosystem</p>
+    <p class="dec-item">Orchestration + copy is the primary job</p>
+  </div>
+</div>
