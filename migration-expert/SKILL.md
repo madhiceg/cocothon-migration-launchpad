@@ -271,26 +271,61 @@ The plan MUST include all sections below. Keep it **visual, crisp, and scannable
 - **Minimal, modern, clean** — generous whitespace, no decorative graphics, no complex diagrams.
 - **Infographics must be CSS-only** — boxes, dots, lines, grids. No images, no SVG, no charts.
 
-### TOOL RECOMMENDATION RULES (CRITICAL — NO BIAS)
-When recommending tools, you MUST:
+### TOOL RECOMMENDATION RULES (CRITICAL — STRICTLY GROUNDED, NO BIAS)
 
-1. **Compare 2-3 realistic options** per category. Never just recommend one tool without showing alternatives.
-2. **Rate each tool** on 4 dimensions (score out of 10):
-   - **Snowflake Integration** — How natively does it integrate with Snowflake? Pushdown queries? Native connector?
-   - **Ease of Use** — How quickly can the customer's team (given their team size and skill level) adopt it?
-   - **Enterprise Depth** — Governance, security, error handling, monitoring, logging, audit trail.
-   - **Total Cost** — Inverted: 10 = cheapest/free, 1 = most expensive. Factor in licensing model (per-seat, per-row, per-connector, open-source).
-3. **List specific strengths** (3-4 bullet points) and **watch-outs** (2-3 bullet points) for each tool.
-4. **Ground the verdict in the customer's context**:
-   - If budget = "Highly Cost Sensitive" or "Open Source Only" → heavily weight cost and open-source options
-   - If team_size < 5 → heavily weight ease of use and managed services
-   - If current tool satisfaction = "Dissatisfied" → explain what the replacement fixes
-   - If SA noted specific vendor frustrations in nuances → directly address those
-   - If compliance is heavy (HIPAA, SOX, PCI) → weight enterprise depth
-5. **Never recommend a tool just because it's popular.** Justify based on THIS customer's data.
-6. **Acknowledge trade-offs honestly.** If a cheaper tool has gaps, say so. If an expensive tool is genuinely better for the use case, say so.
-7. **Include "Pick X when..." decision cards** — 3-5 specific scenarios per tool, mirroring the reference format.
-8. **Read the reference comparison** at `$SKILL_BASE_PATH/knowledge/references/matillion_vs_informatica_vs_adf_snowflake.html` for the exact format and rating methodology.
+**THE #1 RULE: The SA's inputs are the ground truth. Your job is to justify and refine, not override.**
+
+The Solutions Architect has spent time with the customer. They entered specific target tools, satisfaction ratings, tooling concerns, and vendor preferences. These are NOT suggestions — they are signals from someone who knows the customer.
+
+#### Grounding Hierarchy (follow this order EXACTLY):
+
+**Priority 1: SA's Explicit Target Tools (from TRANSFORMATION_DATA)**
+- `target_transform` — SA chose these transformation tools for a reason. RECOMMEND THESE.
+- `target_orchestration` — SA chose these orchestrators. RECOMMEND THESE.
+- `target_bi` — SA chose these BI tools. RECOMMEND THESE.
+- `target_governance` — SA chose these governance tools. RECOMMEND THESE.
+- If the SA selected dbt Cloud, recommend dbt Cloud — NOT dbt-core just because budget is tight.
+- If the SA selected Sigma, recommend Sigma — NOT Power BI just because it's cheaper.
+
+**Priority 2: SA's Tooling Concerns & Nuances (from NUANCES_DATA)**
+- `tooling_concerns` — If the SA wrote "customer loves Airbyte", recommend Airbyte.
+- If the SA wrote "considering Matillion", include Matillion in the comparison.
+- If the SA wrote "customer wants to keep Tableau", recommend Tableau — don't suggest replacing it.
+- Quote the SA's exact words in your verdict to show you listened.
+
+**Priority 3: Current Tool Satisfaction (from ASSESSMENT_ETL_TOOLS)**
+- If a tool is rated "Satisfied" with plan "Keep as-is" → KEEP IT. Don't replace what works.
+- If a tool is rated "Dissatisfied" with plan "Replace" → Replace it, and explain what the replacement fixes.
+- If a tool is rated "Neutral" with plan "Considering alternatives" → Show alternatives but don't force a change.
+
+**Priority 4: Ingestion Preferences (from ETL_DATA)**
+- `ingestion_preferences` — SA selected specific Snowflake-native methods. Use these.
+
+**Priority 5: Budget & Team Size (from CUSTOMER_DATA)**
+- Budget sensitivity and team size are FILTERS, not overrides.
+- They help you choose BETWEEN options when the SA hasn't specified a preference.
+- They NEVER override an explicit SA selection.
+
+#### What This Means in Practice:
+
+| SA Said | Wrong (biased) | Right (grounded) |
+|---------|---------------|-------------------|
+| target_transform = ["dbt Cloud", "SQLMesh"] | Recommend dbt-core because budget is tight | Recommend dbt Cloud (SA's choice), compare with SQLMesh (SA's alternative) |
+| target_bi = ["Sigma Computing", "Streamlit"] | Recommend Power BI because it's cheaper | Recommend Sigma (SA's primary), show Streamlit as complement |
+| Fivetran satisfaction = "Dissatisfied", Airbyte = "Satisfied" | Recommend Fivetran because it's better rated in tool-profiles | Recommend expanding Airbyte (customer loves it), replace Fivetran |
+| tooling_concerns = "evaluating Coalesce" | Ignore Coalesce, recommend dbt | Include Coalesce in transformation comparison |
+| target_orchestration = ["dbt Cloud Scheduler", "Snowflake Tasks"] | Recommend Airflow because it's industry standard | Recommend dbt Cloud Scheduler + Snowflake Tasks (SA's choices) |
+
+#### Comparison Card Selection:
+- **Always include the SA's target tools** as comparison candidates.
+- Add 1-2 alternatives from tool-profiles.md for honest comparison.
+- The SA's chosen tool should usually be the recommended one UNLESS you have a strong, specific, data-backed reason to disagree (and you must explain why).
+
+#### When You CAN Disagree with the SA:
+- If the SA selected a tool that genuinely doesn't support their source system (e.g., Airbyte for mainframe)
+- If the SA selected a tool that violates a hard compliance requirement
+- If there's a clear factual mismatch (e.g., tool doesn't have a Snowflake connector)
+- In these cases: explain the issue clearly, recommend the alternative, and flag it as a divergence from the SA's input.
 
 ## BRAND GUIDELINES (MANDATORY)
 
