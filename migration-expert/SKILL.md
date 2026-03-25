@@ -86,6 +86,15 @@ Before writing ANY plan, check for gaps in the assessment data. If ANY of these 
 
 **DO NOT proceed to plan generation if critical gaps exist. Ask first.**
 
+#### Source System Conversion Reference (from migration-reference-pack.md)
+When analyzing source systems, use these conversion mappings to estimate complexity and guide tool recommendations:
+- **Oracle:** CONNECT BY → Recursive CTEs; DECODE → CASE; NVL → COALESCE; ROWNUM → ROW_NUMBER(); PL/SQL packages → Snowflake Scripting + Snowpark. Use SnowConvert. Timeline: 12-20 weeks. Risk: High.
+- **Teradata:** QUALIFY → Snowflake QUALIFY (native); BTEQ → SQL scripts; MultiSet → Standard tables; HASH BY → Clustering keys. Use SnowConvert. Timeline: 16-24 weeks. Risk: High.
+- **SQL Server:** TOP → LIMIT; IDENTITY → AUTOINCREMENT; CROSS APPLY → LATERAL; SSRS → Sigma/Tableau/Streamlit. Timeline: 8-14 weeks. Risk: Medium.
+- **Redshift:** DISTKEY/SORTKEY → Clustering keys (optional); Spectrum → External tables; WLM → Resource monitors. Timeline: 6-10 weeks. Risk: Low.
+- **BigQuery:** UNNEST → LATERAL FLATTEN; STRUCT → OBJECT/VARIANT; BigQuery ML → Snowpark ML/Cortex. Timeline: 8-12 weeks. Risk: Medium.
+- **Databricks:** Spark SQL → Snowflake SQL; Delta Lake → Iceberg Tables; Notebooks → Snowflake Notebooks/Snowpark. Timeline: 10-16 weeks. Risk: Medium.
+
 ### Step 4: Generate the Plan as JSON
 
 After analysis, construct a structured JSON plan object. This JSON is the **single source of truth** consumed by the renderer notebook. ALL business logic, analysis, and recommendations MUST be computed here — the notebook is a pure renderer with zero business logic.
@@ -213,6 +222,68 @@ The JSON structure MUST follow this exact schema. Every field is required unless
     {"kpi": "Cost Reduction", "target": "30%+ TCO reduction", "measurement": "Snowflake billing vs legacy"}
   ],
   "next_steps": ["Kickoff meeting with executive sponsor", "Account provisioning", "Network connectivity setup"],
+  "effort_estimation": {
+    "total_duration": "16-24 weeks",
+    "phases": [
+      {"phase": "Assessment & Discovery", "duration": "2-3 weeks", "team_size": "1-2 SA", "activities": ["Inventory source systems", "Profile data volumes", "Map dependencies", "Assess SQL complexity"]},
+      {"phase": "Architecture Design", "duration": "2-3 weeks", "team_size": "2 DE + 1 SA", "activities": ["Design target state", "Select tool stack", "Define data architecture", "RBAC model"]},
+      {"phase": "Foundation Build", "duration": "2-4 weeks", "team_size": "2-3 DE", "activities": ["Snowflake setup", "RBAC implementation", "Networking", "Monitoring"]},
+      {"phase": "Ingestion & Pipelines", "duration": "4-8 weeks", "team_size": "2-3 DE", "activities": ["Pipeline build", "Historical load", "CDC setup", "Snowpipe config"]},
+      {"phase": "Transformation", "duration": "4-8 weeks", "team_size": "2-4 AE", "activities": ["dbt models (Bronze/Silver/Gold)", "SP conversion", "Testing", "Data quality checks"]},
+      {"phase": "BI Migration", "duration": "2-4 weeks", "team_size": "1-2 Analyst", "activities": ["Dashboard recreation", "Report validation", "User training"]},
+      {"phase": "Validation", "duration": "2-3 weeks", "team_size": "Full team", "activities": ["4-level data validation", "Performance benchmarking", "UAT"]},
+      {"phase": "Cutover & Hypercare", "duration": "1-2 weeks", "team_size": "Full team", "activities": ["Parallel run", "Go-live", "War room", "Hypercare"]}
+    ],
+    "notes": "Adjust based on source system complexity: Oracle/Teradata add 4-8 weeks, SQL Server baseline, Redshift subtract 2-4 weeks."
+  },
+  "data_validation_plan": {
+    "approach": "4-level validation framework ensuring data integrity from source to target",
+    "levels": [
+      {"level": 1, "name": "Row Count Reconciliation", "description": "Compare row counts between source and target for every migrated table", "scope": "All tables", "frequency": "Every load"},
+      {"level": 2, "name": "Aggregate Validation", "description": "Compare SUM, MIN, MAX, AVG, COUNT DISTINCT for numeric and key columns", "scope": "All tables with numeric columns", "frequency": "Every load"},
+      {"level": 3, "name": "Statistical Sampling", "description": "Random 1% sample comparison between source and target for data fidelity", "scope": "Top 20 critical tables by business impact", "frequency": "Post-migration"},
+      {"level": 4, "name": "Checksum Validation", "description": "MD5 hash comparison across concatenated columns for exact match verification", "scope": "Regulatory/compliance tables", "frequency": "Post-migration + post-cutover"}
+    ],
+    "critical_tables": ["List the customer's most important tables here based on assessment data"],
+    "acceptance_criteria": "100% row count match, <0.01% variance on aggregates, 100% checksum match on regulatory tables"
+  },
+  "cutover_plan": {
+    "strategy": "Parallel Run with Rollback Window",
+    "pre_cutover": {
+      "timeline": "T-minus 2 weeks",
+      "checklist": [
+        "All Level 1-4 data validation tests passing",
+        "Performance benchmarks meeting or exceeding source system",
+        "All ETL/ELT pipelines tested in production-equivalent environment",
+        "RBAC roles and permissions validated against source system access",
+        "Rollback procedure documented and tested",
+        "Application connection strings updated in staging",
+        "Monitoring and alerting configured",
+        "Stakeholder sign-off on validation results"
+      ]
+    },
+    "parallel_run": {
+      "timeline": "T-minus 1 week",
+      "checklist": [
+        "Both source and target systems running simultaneously",
+        "Data reconciliation running daily",
+        "Performance monitoring on both platforms",
+        "Incident response team on standby"
+      ]
+    },
+    "go_live": {
+      "timeline": "Go-Live Day",
+      "checklist": [
+        "Final data sync completed",
+        "Application switchover executed",
+        "DNS/connection string cutover",
+        "Source system set to read-only",
+        "Monitoring dashboards active",
+        "War room staffed for first 24 hours",
+        "Rollback decision point: T+4 hours post-cutover"
+      ]
+    }
+  },
   "reference_architectures": [
     {
       "name": "Global Trading Firm (anonymized)",
@@ -241,6 +312,7 @@ Design purpose-built warehouses based on workload analysis:
 - **If ML/risk models**: Add WH_RISK_MODELS or WH_ML (X-Large).
 - **If regulatory reporting**: Add WH_REGULATORY (Medium).
 - **Size est_monthly** based on: Small ~$500, Medium ~$2-4K, Large ~$5-8K, X-Large ~$10-15K, with MC multipliers.
+- **Credit reference** (from migration-reference-pack.md): XS=1/hr, S=2/hr, M=4/hr, L=8/hr, XL=16/hr, 2XL=32/hr, 3XL=64/hr, 4XL=128/hr. Auto-suspend: dev=60s, batch=60s, transform=120s, BI=300s, streaming=always-on.
 
 #### TCO Comparison (MUST INCLUDE)
 Build a detailed cost comparison:
@@ -248,6 +320,8 @@ Build a detailed cost comparison:
 - **Future items**: Project Snowflake credits (based on warehouse strategy), tool licensing (dbt Cloud ~$100K, Fivetran ~$150-250K, Airflow MWAA ~$30K, etc.).
 - **Savings**: Calculate total_current - total_future. Express as both dollar amount and percentage.
 - **The board/CFO cares about this section.** Be specific with numbers, not vague.
+- **ROI factors** (from migration-reference-pack.md): Include reduced maintenance, faster time-to-insight, elastic scaling (no over-provisioning), reduced ETL complexity. Target ROI: 30-60% TCO reduction.
+- **Resource Monitor**: Always include a Resource Monitor SQL template in the plan for cost governance.
 
 #### Performance SLAs
 Include this section whenever NUANCES_DATA.performance_requirements exists:
@@ -259,6 +333,7 @@ Include this section whenever NUANCES_DATA.performance_requirements exists:
 Always include risks. Severity levels: CRITICAL (blocks go-live), High (delays timeline), Medium (manageable), Low (awareness).
 - **Always check for**: zero-downtime requirements, vendor termination clauses, team resistance, compliance audit timelines, cross-system dependencies, SP conversion complexity.
 - **Reference similar customer lessons** from REFERENCE_ARCHITECTURES when available.
+- **Standard risk matrix** (from migration-reference-pack.md): Always consider these 8 risks: data loss (Low prob/Critical impact), SQL conversion errors (Med/High), performance regression (Med/High), ETL pipeline failures (Med/Med), scope creep (High/Med), skill gaps (Med/Med), timeline overrun (High/Med), security/compliance gaps (Low/Critical). Adjust probability based on customer-specific factors.
 
 #### Reference Architectures
 Include matching reference architectures from the database query. For each:
@@ -301,6 +376,7 @@ Before generating any plan, read the relevant knowledge files for source-specifi
 - `$SKILL_BASE_PATH/knowledge/tool-selection-matrix.md` — Quick-reference comparison tables (lighter weight than tool-profiles.md)
 - `$SKILL_BASE_PATH/knowledge/architecture-patterns.md` — Medallion, Data Vault, Star Schema, Data Mesh, Warehouse Strategy, RBAC, CI/CD patterns
 - `$SKILL_BASE_PATH/knowledge/multi-tenancy-patterns.md` — MTT, OPT, APT deep dive with decision framework
+- `$SKILL_BASE_PATH/knowledge/migration-reference-pack.md` — **CRITICAL REFERENCE.** Extracted from the Snowflake Migration Reference Pack PDF. Contains: 12-step migration methodology, source system complexity matrix (Oracle/Teradata/SQL Server/Redshift/BigQuery/Databricks with timelines and risk levels), 4-level data validation framework (row counts → aggregates → sampling → checksums) with SQL templates, cost estimation framework (credit consumption by warehouse size, TCO comparison template, Resource Monitor SQL), cutover planning checklists (pre-cutover, parallel run, go-live day), risk assessment matrix with probability/impact/mitigation, migration success KPIs (technical and business), and implementation effort estimation by phase. **USE THIS FILE** to ground your migration timelines, validation plans, cost estimates, risk registers, and success criteria in verified reference data rather than ad-hoc estimates.
 
 ### Tool Recommendation Process (MANDATORY)
 The skill is the **brain** for all tool decisions. The notebook is only the **renderer**.
@@ -318,6 +394,7 @@ These files contain real-world reference architectures and tool comparisons uplo
 - `$SKILL_BASE_PATH/knowledge/references/matillion_vs_informatica_vs_adf_snowflake.html` — Detailed comparison of Matillion vs Informatica vs Azure Data Factory for Snowflake. Use this when the customer is evaluating ETL/ELT tools, especially when migrating off Informatica or ADF. Contains decision criteria, feature matrix, pricing analysis, and integration patterns.
 - `$SKILL_BASE_PATH/knowledge/references/snowflake_migration_phases.svg` — Visual reference for the standard kipi.ai migration phase framework. Use the phase structure, naming conventions, and task groupings from this diagram when generating migration timelines. Phases include: Discover & Assess, Design, Build & Migrate, Validate, Go-Live & Optimize.
 - `$SKILL_BASE_PATH/knowledge/references/snowflake_target_state_architecture.svg` — Reference target-state architecture diagram showing the recommended Snowflake architecture layout. Use this as the blueprint for the Target Architecture section — it shows the data flow from source systems through ingestion, transformation, and consumption layers with Snowflake at the center.
+- `$SKILL_BASE_PATH/knowledge/references/Snowflake_Migration_Reference_Pack.pdf` — Comprehensive migration reference pack from kipi.ai. Key content has been extracted into `migration-reference-pack.md` for fast loading. The PDF is the authoritative source if deeper detail is needed on any topic.
 
 **When to use these references:**
 - If the customer uses Informatica, ADF, or is evaluating Matillion → READ the Matillion comparison and cite relevant findings.
@@ -329,6 +406,7 @@ These files contain real-world reference architectures and tool comparisons uplo
 The plan MUST include all sections below. Keep it **visual, crisp, and scannable** — NO long paragraphs.
 
 1. **Executive Summary** — Overview paragraph, drivers, approach, reference customer callout.
+1b. **Implementation Effort Estimate** — Phase-by-phase effort table showing duration, team size, and key activities per phase. Reference the effort estimation framework in migration-reference-pack.md. Typical range: 12-24 weeks. Adjust based on source system complexity matrix (Oracle/Teradata: 12-24 weeks, SQL Server: 8-14 weeks, Redshift: 6-10 weeks).
 2. **Snapshot** — Metric cards grid (data volume, tables, SPs, users, queries, CDC, timeline, budget). Source/compliance/driver tags.
 3. **Current State** — Compact tables for source systems and ETL tools. Bullet-point pain points (max 2 lines each).
 4. **Target Architecture** — Edition + region as tags. Schema flow diagram (visual boxes with arrows). Streaming architecture, data sharing, archival strategy (if applicable). Warehouse table with est_monthly costs.
@@ -342,9 +420,11 @@ The plan MUST include all sections below. Keep it **visual, crisp, and scannable
 8. **Performance SLAs** — Table of KPI | Current | Target SLA | Approach. Include whenever performance requirements exist in nuances.
 9. **Security & Compliance** — Card grid (requirement + implementation, max 2 lines each).
 10. **Risks** — Two-column risk cards with severity color-coding and one-line mitigation.
-11. **Success Criteria** — Clean KPI rows (name | target | measurement) — no table borders, just rows.
+11. **Success Criteria** — Clean KPI rows (name | target | measurement) — no table borders, just rows. **Always include these standard KPIs** (from migration-reference-pack.md): Data Accuracy (100% row count, <0.01% aggregate variance), Query Performance (P50/P95 meet or exceed source), Pipeline Reliability (>99.5% success rate in first 30 days), Data Freshness (batch <1hr, streaming <5min), TCO Reduction (30-60% target), User Adoption (% analysts on Snowflake within 30 days), Incident Rate (<2 P1s in first 30 days).
 12. **Next Steps** — Numbered circles with one-line actions.
 13. **Reference Architectures** — Similar customer case studies with lessons learned and success metrics.
+14. **Data Validation Plan** — Include the 4-level validation framework from migration-reference-pack.md: Level 1 (Row Count Reconciliation), Level 2 (Aggregate Validation — SUM/MIN/MAX/AVG/DISTINCT), Level 3 (Statistical Sampling — 1% random sample), Level 4 (Checksum Validation — MD5 hash comparison). Provide SQL templates for each level customized to the customer's critical tables.
+15. **Cutover Plan** — Include the 3-stage cutover checklist from migration-reference-pack.md: Pre-Cutover (T-2 weeks: validation, benchmarks, RBAC, rollback tested), Parallel Run (T-1 week: dual systems, daily reconciliation, monitoring), Go-Live Day (final sync, switchover, DNS cutover, war room, rollback decision point at T+4 hours).
 
 ### OUTPUT STYLE RULES
 - **No paragraphs longer than 2 lines.** If it takes more, use bullets or a table.
