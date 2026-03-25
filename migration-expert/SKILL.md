@@ -54,7 +54,7 @@ WHERE UPPER(CUSTOMER_NAME) LIKE UPPER('%<customer_name>%');
 Run ALL of these queries — every one of them — to get the full picture:
 
 ```sql
--- Master assessment
+-- Master assessment (includes VERSION_NUMBER — always use latest version)
 SELECT * FROM MIGRATION_ASSESSMENTS.INTAKE.ASSESSMENTS WHERE ASSESSMENT_ID = '<id>';
 
 -- Source system details
@@ -68,6 +68,9 @@ SELECT NUANCES_DATA:tooling_concerns::VARCHAR, NUANCES_DATA:cost_priorities::VAR
 
 -- Reference architectures (similar industry or source systems)
 SELECT * FROM MIGRATION_ASSESSMENTS.INTAKE.REFERENCE_ARCHITECTURES WHERE INDUSTRY = '<industry>' OR ARRAYS_OVERLAP(SOURCE_SYSTEMS, (SELECT SOURCE_SYSTEMS FROM MIGRATION_ASSESSMENTS.INTAKE.ASSESSMENTS WHERE ASSESSMENT_ID = '<id>'));
+
+-- Version history (check if assessment was previously edited)
+SELECT VERSION_NUMBER, CHANGE_SUMMARY, CREATED_AT, CREATED_BY FROM MIGRATION_ASSESSMENTS.INTAKE.ASSESSMENT_VERSION_HISTORY WHERE ASSESSMENT_ID = '<id>' ORDER BY VERSION_NUMBER DESC;
 ```
 
 ### Step 3: Analyze & Ask Follow-Up Questions
