@@ -175,9 +175,10 @@ st.set_page_config(layout="wide", page_title="CoCoDuo Migration Launchpad")
 
 with st.sidebar:
     st.markdown("""
-    <div style="text-align:center; padding: 0.5rem 0 1rem;">
-        <div style="font-size:1.5rem; font-weight:800; color:#29B5E8; letter-spacing:-0.5px;">CoCoDuo</div>
-        <div style="font-size:0.7rem; color:#888; letter-spacing:1px;">MIGRATION LAUNCHPAD</div>
+    <div style="text-align:center; padding: 0.5rem 0 0.8rem;">
+        <div style="font-size:1.4rem; font-weight:800; color:#29B5E8; letter-spacing:-0.5px;">CoCoDuo</div>
+        <div style="font-size:0.6rem; color:#888; letter-spacing:1.5px; margin-top:2px;">MIGRATION LAUNCHPAD</div>
+        <div style="font-size:0.65rem; color:#aaa; margin-top:4px;">by <span style="color:#B3D943;font-weight:700;">kipi.ai</span></div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -352,7 +353,12 @@ with st.sidebar:
             st.session_state.pop(k, None)
 
     st.markdown("---")
-    st.caption("kipi.ai · CoCoDuo v2.0")
+    st.markdown(
+        '<div style="font-size:0.72rem;color:#888;text-align:center;">'
+        '<span style="color:#B3D943;font-weight:700;">kipi.ai</span> · CoCoDuo v2.0'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
 edit_mode = st.session_state.get("edit_mode", False)
 loaded = st.session_state.get("loaded_assessment", {})
@@ -383,14 +389,14 @@ st.markdown(
         margin-bottom: 1rem;
     }
     .section-header {
-        font-size: 1.15rem;
+        font-size: 1.05rem;
         font-weight: 700;
         color: #29B5E8;
-        margin-top: 1.2rem;
-        margin-bottom: 0.4rem;
-        display: flex;
-        align-items: center;
-        gap: 6px;
+        margin-top: 1.4rem;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.35rem;
+        border-bottom: 2px solid rgba(41, 181, 232, 0.15);
+        letter-spacing: -0.2px;
     }
     .info-box {
         padding: 14px 18px;
@@ -409,17 +415,22 @@ st.markdown(
         text-align: center;
     }
     .stTabs [data-baseweb="tab-list"] {
-        gap: 2px;
+        gap: 0;
+        border-bottom: 2px solid rgba(41, 181, 232, 0.12);
     }
     .stTabs [data-baseweb="tab"] {
-        padding: 8px 16px;
+        padding: 10px 20px;
         font-size: 0.82rem;
-        font-weight: 600;
+        font-weight: 700;
+        letter-spacing: 0.01em;
     }
     div[data-testid="stExpander"] {
         border: 1px solid rgba(41, 181, 232, 0.15);
         border-radius: 8px;
         margin-bottom: 8px;
+    }
+    div[data-testid="stExpander"] summary span {
+        font-weight: 600 !important;
     }
     .progress-bar-container {
         background: #E8E8E8;
@@ -432,6 +443,25 @@ st.markdown(
         height: 100%;
         border-radius: 10px;
         transition: width 0.4s ease;
+    }
+    .review-card {
+        padding: 12px 16px;
+        border-radius: 8px;
+        border: 1px solid rgba(41, 181, 232, 0.12);
+        margin-bottom: 8px;
+    }
+    .review-card .rc-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        margin-bottom: 2px;
+    }
+    .review-card .rc-value {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: inherit;
     }
     </style>
     """,
@@ -687,12 +717,7 @@ with tab2:
         '<div class="section-header">Source Database Systems</div>',
         unsafe_allow_html=True,
     )
-    st.markdown(
-        '<div class="info-box">'
-        "Select all source systems involved in this migration. Detail panels appear dynamically for each selection."
-        "</div>",
-        unsafe_allow_html=True,
-    )
+    st.caption("Select all source systems involved in this migration. Detail panels appear dynamically for each.")
 
     _src_default = [s for s in loaded_src_sys if s in SOURCE_SYSTEMS] if edit_mode else []
     source_systems = st.multiselect(
@@ -1783,8 +1808,7 @@ with tab7:
         f'</div>',
         unsafe_allow_html=True,
     )
-    _pct_icon = "" if pct >= 80 else ("" if pct >= 50 else "")
-    st.markdown(f"**{pct}% Complete** | {completed}/{total} sections filled")
+    st.markdown(f"**{pct}% Complete** &mdash; {completed} of {total} sections filled", unsafe_allow_html=True)
 
     if pct < 100:
         missing = [k for k, v in checks.items() if not v]
@@ -1793,10 +1817,25 @@ with tab7:
     st.divider()
 
     if cust.get("name"):
-        st.markdown(f"**Customer:** {cust['name']}  |  **Industry:** {cust.get('industry', 'N/A')}")
-        st.markdown(f"**SA:** {cust.get('sa_name', 'N/A')}  |  **Engagement:** {cust.get('engagement_type', 'N/A')}")
-        st.markdown(f"**Timeline:** {cust.get('timeline', 'N/A')}  |  **Budget:** {cust.get('budget_sensitivity', 'N/A')}  |  **Approach:** {cust.get('migration_approach', 'N/A')}")
-        st.markdown(f"**Snowflake Edition:** {cust.get('snowflake_edition', 'N/A')}  |  **Team Size:** {cust.get('team_size', 'N/A')}")
+        c1, c2, c3, c4 = st.columns(4)
+        def _rc(label, value):
+            return f'<div class="review-card"><div class="rc-label">{label}</div><div class="rc-value">{value}</div></div>'
+        with c1:
+            st.markdown(_rc("Customer", cust['name']), unsafe_allow_html=True)
+            st.markdown(_rc("Industry", cust.get('industry', 'N/A')), unsafe_allow_html=True)
+            st.markdown(_rc("Engagement", cust.get('engagement_type', 'N/A')), unsafe_allow_html=True)
+        with c2:
+            st.markdown(_rc("Solutions Architect", cust.get('sa_name', 'N/A')), unsafe_allow_html=True)
+            st.markdown(_rc("Timeline", cust.get('timeline', 'N/A')), unsafe_allow_html=True)
+            st.markdown(_rc("Budget Sensitivity", cust.get('budget_sensitivity', 'N/A')), unsafe_allow_html=True)
+        with c3:
+            st.markdown(_rc("Migration Approach", cust.get('migration_approach', 'N/A')), unsafe_allow_html=True)
+            st.markdown(_rc("Snowflake Edition", cust.get('snowflake_edition', 'N/A')), unsafe_allow_html=True)
+            st.markdown(_rc("Team Size", cust.get('team_size', 'N/A')), unsafe_allow_html=True)
+        with c4:
+            st.markdown(_rc("Data Sharing", "Yes" if cust.get('data_sharing_needed') else "No"), unsafe_allow_html=True)
+            st.markdown(_rc("Iceberg Interest", "Yes" if cust.get('iceberg_interest') else "No"), unsafe_allow_html=True)
+            st.markdown(_rc("Snowpark Interest", "Yes" if cust.get('snowpark_interest') else "No"), unsafe_allow_html=True)
     else:
         st.warning("Please fill in the Customer Profile tab first.")
 
