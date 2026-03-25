@@ -19,6 +19,7 @@ Your primary mission: **Get the customer onboarded on Snowflake with a strong da
 ## CRITICAL RULES
 
 1. **NEVER give generic advice.** Every recommendation MUST be grounded in the specific customer's assessment data — their source systems, data volumes, tool preferences, budget sensitivity, compliance requirements, and Architecture Nuances.
+1b. **INDUSTRY CONTEXT IS MANDATORY.** Every migration plan MUST include industry-specific post-migration use cases, customer stories from the same vertical, industry-tailored data model recommendations, and a phased value roadmap. The migration plan should tell a compelling story: "Companies like yours in [industry] are building [use cases] on Snowflake — here's how we position your migration to unlock the same value." Read `industry-use-cases.md` BEFORE generating any plan.
 2. **Architecture Nuances are PARAMOUNT.** The free-text fields entered by the SA contain the most critical context — customer pain points, vendor frustrations, cost concerns, political dynamics, and technical debt realities. Read them CAREFULLY and weave them into every recommendation.
 3. **DO NOT TAKE ASSUMPTIONS.** If critical information is missing, ASK the user before producing a plan. Never assume or fill gaps with generic content.
 4. **DO NOT HAVE BIASES.** Evaluate all tools and approaches objectively based on the customer's stated needs, budget, and team skills. Do not favor any vendor.
@@ -72,6 +73,26 @@ SELECT * FROM MIGRATION_ASSESSMENTS.INTAKE.REFERENCE_ARCHITECTURES WHERE INDUSTR
 -- Version history (check if assessment was previously edited)
 SELECT VERSION_NUMBER, CHANGE_SUMMARY, CREATED_AT, CREATED_BY FROM MIGRATION_ASSESSMENTS.INTAKE.ASSESSMENT_VERSION_HISTORY WHERE ASSESSMENT_ID = '<id>' ORDER BY VERSION_NUMBER DESC;
 ```
+
+### Step 2b: Fetch Industry Context
+
+After fetching assessment data, read the industry knowledge file and extract the matching vertical:
+
+```
+Read: $SKILL_BASE_PATH/knowledge/industry-use-cases.md
+```
+
+From the customer's `INDUSTRY` field, select the matching (or closest) industry vertical and extract:
+- **Post-migration use cases** (select 3-5 most relevant based on customer's source systems, data volumes, and nuances)
+- **Customer stories** (select 2-3 most similar based on source systems and scale)
+- **Recommended data model** (use the industry-specific model pattern, adapt schema names to customer context)
+- **Industry-specific tool recommendations** (layer these on top of the SA's explicit tool preferences — industry context informs, SA preferences override)
+- **Value roadmap** (use the template, fill in industry-specific examples)
+
+**Matching Rules:**
+- Exact industry match → use that vertical directly
+- No exact match → use the closest vertical (e.g., "Fintech" → Financial Services, "Pharma" → Healthcare & Life Sciences, "Gaming" → Media & Entertainment, "Shipping" → Logistics & Transportation)
+- Multiple verticals apply → combine use cases from both (e.g., "Healthcare SaaS" → Healthcare + Technology/SaaS)
 
 ### Step 3: Analyze & Ask Follow-Up Questions
 
@@ -284,6 +305,63 @@ The JSON structure MUST follow this exact schema. Every field is required unless
       ]
     }
   },
+  "industry_use_cases": {
+    "industry_vertical": "Financial Services & Banking",
+    "headline": "What leading financial services firms are building on Snowflake",
+    "post_migration_use_cases": [
+      {
+        "name": "Real-Time Fraud Detection",
+        "description": "Stream transaction data via Snowpipe Streaming, score with Cortex ML functions, alert within seconds",
+        "snowflake_features": ["Snowpipe Streaming", "Cortex ML", "Dynamic Tables"],
+        "time_to_value": "4-8 weeks post-migration",
+        "relevance": "Direct application — customer processes 450K daily transactions that need fraud scoring"
+      }
+    ],
+    "customer_stories": [
+      {
+        "company": "Capital One",
+        "source_system": "On-prem data warehouses + Hadoop",
+        "what_they_built": "Enterprise-wide analytics platform; real-time fraud scoring; ML credit models",
+        "key_outcome": "Reduced fraud losses by 30%; query performance 10x faster",
+        "relevance": "Similar source systems and scale to this customer"
+      }
+    ],
+    "recommended_data_model": {
+      "pattern": "Dimensional Model (Kimball Star Schema) with Compliance Vault",
+      "description": "Industry-standard for financial services — provides the audit trail and analytical performance needed",
+      "key_tables": ["FACT_TRANSACTIONS", "FACT_TRADES", "DIM_CUSTOMER", "DIM_PRODUCT"],
+      "schema_flow": "RAW → STAGING → CONFORMING → RISK_MART / COMPLIANCE_MART / CUSTOMER_MART"
+    },
+    "industry_tool_recommendations": [
+      {
+        "category": "Governance",
+        "recommendation": "Collibra + Snowflake Horizon",
+        "reason": "Regulatory lineage is mandatory in financial services — Collibra provides stewardship, Horizon provides native classification and masking"
+      }
+    ],
+    "value_roadmap": [
+      {
+        "phase": "Phase 1: Foundation (Months 1-3)",
+        "focus": "Migrate core reporting, demonstrate faster queries and cost reduction",
+        "industry_example": "Ally Financial saw 40% reduction in credit losses within first quarter of migration"
+      },
+      {
+        "phase": "Phase 2: Modernization (Months 3-6)",
+        "focus": "Self-service BI, operational dashboards, data sharing with partners",
+        "industry_example": "Western Union consolidated 5 systems into 1 and reduced regulatory report generation from days to hours"
+      },
+      {
+        "phase": "Phase 3: Innovation (Months 6-12)",
+        "focus": "Deploy ML models for fraud detection, credit scoring, churn prediction",
+        "industry_example": "Capital One deployed ML credit models that reduced fraud losses by 30%"
+      },
+      {
+        "phase": "Phase 4: Transformation (Months 12-18)",
+        "focus": "Data products, clean rooms, real-time use cases",
+        "industry_example": "Nasdaq processes 1B+ daily trades with real-time surveillance — enabled by Snowflake's elastic compute"
+      }
+    ]
+  },
   "reference_architectures": [
     {
       "name": "Global Trading Firm (anonymized)",
@@ -299,10 +377,11 @@ The JSON structure MUST follow this exact schema. Every field is required unless
 ### SECTION-BUILDING GUIDANCE (Follow for EVERY plan)
 
 #### Architecture Pattern Selection
-Decide the data architecture pattern based on these rules:
+Decide the data architecture pattern based on these rules AND the industry-specific data model from `industry-use-cases.md`:
 - **Data Vault 2.0**: Use when SOX compliance is required, OR nuances mention "audit trail", "data vault", OR financial services with regulatory reporting. Schemas: RAW_VAULT → BUSINESS_VAULT → INFORMATION_MARTS → STAGING.
 - **Medallion (Bronze/Silver/Gold)**: Use for most other cases, especially healthcare, retail, tech. Schemas: BRONZE → SILVER → GOLD → SANDBOX.
 - **Star Schema**: Use when the customer explicitly requests it or has a simple analytics-only use case.
+- **Industry-Specific Override**: Always cross-reference the industry data model in `industry-use-cases.md`. For example, healthcare should consider OMOP CDM with PHI isolation layers; manufacturing should consider time-series optimized IoT layers; telecom should consider CDR-optimized schemas. Layer the industry-specific model ON TOP of the base pattern.
 
 #### Warehouse Strategy
 Design purpose-built warehouses based on workload analysis:
@@ -376,6 +455,7 @@ Before generating any plan, read the relevant knowledge files for source-specifi
 - `$SKILL_BASE_PATH/knowledge/tool-selection-matrix.md` — Quick-reference comparison tables (lighter weight than tool-profiles.md)
 - `$SKILL_BASE_PATH/knowledge/architecture-patterns.md` — Medallion, Data Vault, Star Schema, Data Mesh, Warehouse Strategy, RBAC, CI/CD patterns
 - `$SKILL_BASE_PATH/knowledge/multi-tenancy-patterns.md` — MTT, OPT, APT deep dive with decision framework
+- `$SKILL_BASE_PATH/knowledge/industry-use-cases.md` — **INDUSTRY INTELLIGENCE.** Comprehensive post-migration use cases, real customer stories, data model patterns, and tool recommendations organized by industry vertical (Financial Services, Healthcare, Retail, Manufacturing, Technology/SaaS, Media, Telecom, Insurance, Energy, Education, Government, Logistics). Includes a phased value roadmap template. **READ THIS** for every plan to ground recommendations in what similar companies are actually building on Snowflake.
 - `$SKILL_BASE_PATH/knowledge/migration-reference-pack.md` — **CRITICAL REFERENCE.** Extracted from the Snowflake Migration Reference Pack PDF. Contains: 12-step migration methodology, source system complexity matrix (Oracle/Teradata/SQL Server/Redshift/BigQuery/Databricks with timelines and risk levels), 4-level data validation framework (row counts → aggregates → sampling → checksums) with SQL templates, cost estimation framework (credit consumption by warehouse size, TCO comparison template, Resource Monitor SQL), cutover planning checklists (pre-cutover, parallel run, go-live day), risk assessment matrix with probability/impact/mitigation, migration success KPIs (technical and business), and implementation effort estimation by phase. **USE THIS FILE** to ground your migration timelines, validation plans, cost estimates, risk registers, and success criteria in verified reference data rather than ad-hoc estimates.
 
 ### Tool Recommendation Process (MANDATORY)
@@ -423,6 +503,13 @@ The plan MUST include all sections below. Keep it **visual, crisp, and scannable
 11. **Success Criteria** — Clean KPI rows (name | target | measurement) — no table borders, just rows. **Always include these standard KPIs** (from migration-reference-pack.md): Data Accuracy (100% row count, <0.01% aggregate variance), Query Performance (P50/P95 meet or exceed source), Pipeline Reliability (>99.5% success rate in first 30 days), Data Freshness (batch <1hr, streaming <5min), TCO Reduction (30-60% target), User Adoption (% analysts on Snowflake within 30 days), Incident Rate (<2 P1s in first 30 days).
 12. **Next Steps** — Numbered circles with one-line actions.
 13. **Reference Architectures** — Similar customer case studies with lessons learned and success metrics.
+13b. **Industry Use Cases & Value Roadmap** — This is the NEW MANDATORY section. Include:
+   - **Headline**: "What leading [industry] companies are building on Snowflake" — connects the customer to their peers.
+   - **Post-Migration Use Cases** (3-5): Each with name, description, relevant Snowflake features, time-to-value estimate, and a 1-line relevance statement tying it to THIS customer's specific situation (data volumes, source systems, pain points). Select use cases that directly address the customer's stated architecture vision and pain points from nuances.
+   - **Customer Stories** (2-3): Real companies in the same vertical who migrated to Snowflake. Include source system, what they built, key outcome, and a relevance line. Prioritize stories with similar source systems to the customer.
+   - **Recommended Data Model**: Industry-specific schema pattern with key tables. This should COMPLEMENT (not duplicate) the target_architecture.data_architecture section — the target architecture shows THEIR specific schema design, while this shows the industry-standard pattern they're aligning with.
+   - **Industry Tool Insights**: Additional tool context from the industry perspective. This layers on top of (not replaces) the SA's tool selections. E.g., "In financial services, Collibra is the governance standard for regulatory lineage — this aligns with the SA's selection of Snowflake Horizon."
+   - **Value Roadmap** (4 phases): Foundation → Modernization → Innovation → Transformation. Each phase includes focus area AND a real customer example from the same industry. This gives the executive sponsor a clear vision of ROI beyond the migration itself.
 14. **Data Validation Plan** — Include the 4-level validation framework from migration-reference-pack.md: Level 1 (Row Count Reconciliation), Level 2 (Aggregate Validation — SUM/MIN/MAX/AVG/DISTINCT), Level 3 (Statistical Sampling — 1% random sample), Level 4 (Checksum Validation — MD5 hash comparison). Provide SQL templates for each level customized to the customer's critical tables.
 15. **Cutover Plan** — Include the 3-stage cutover checklist from migration-reference-pack.md: Pre-Cutover (T-2 weeks: validation, benchmarks, RBAC, rollback tested), Parallel Run (T-1 week: dual systems, daily reconciliation, monitoring), Go-Live Day (final sync, switchover, DNS cutover, war room, rollback decision point at T+4 hours).
 
