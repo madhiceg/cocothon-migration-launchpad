@@ -171,7 +171,7 @@ COMPLIANCE_FRAMEWORKS = [
     "None / Not Applicable",
 ]
 
-st.set_page_config(layout="wide", page_title="CoCoDuo Migration Launchpad")
+st.set_page_config(layout="wide", page_title="Snowflake Migration Launchpad")
 
 with st.sidebar:
     st.markdown("""
@@ -469,7 +469,7 @@ st.markdown(
 )
 
 st.markdown(
-    '<div class="main-header">Snowflake Migration Assessment Portal</div>'
+    '<div class="main-header">Snowflake Migration Launchpad</div>'
     '<div class="main-sub">Capture customer migration details for CoCo to generate tailored architecture plans</div>',
     unsafe_allow_html=True,
 )
