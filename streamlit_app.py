@@ -171,6 +171,81 @@ COMPLIANCE_FRAMEWORKS = [
     "None / Not Applicable",
 ]
 
+INDUSTRY_INTELLIGENCE = {
+    "Financial Services / Banking": {
+        "top_use_cases": ["Real-Time Fraud Detection", "Regulatory Reporting (Basel/SOX/IFRS)", "Customer 360 / KYC", "Risk Analytics & Stress Testing", "Credit Decisioning"],
+        "peer_companies": ["Capital One", "Western Union", "Nasdaq", "Ally Financial"],
+        "data_model": "Dimensional Model (Kimball) with Compliance Vault",
+        "key_features": ["Snowpipe Streaming", "Cortex ML", "Dynamic Tables", "Time Travel", "Horizon (lineage + classification)"],
+    },
+    "Healthcare & Life Sciences": {
+        "top_use_cases": ["Clinical Data Warehouse", "Real-World Evidence (RWE)", "Claims Analytics & Fraud Detection", "Patient 360", "HIPAA-Compliant Data Sharing"],
+        "peer_companies": ["Providence Health", "Anthem (Elevance Health)", "Novartis", "Tempus"],
+        "data_model": "OMOP Common Data Model with PHI Isolation Layers",
+        "key_features": ["Data Clean Rooms", "Dynamic Data Masking", "Horizon (HIPAA classification)", "Marketplace (health data)"],
+    },
+    "Retail & E-commerce": {
+        "top_use_cases": ["Customer 360 & Personalization", "Demand Forecasting", "Real-Time Pricing", "Supply Chain Visibility", "Unified Commerce Analytics"],
+        "peer_companies": ["Instacart", "PepsiCo", "Albertsons", "DoorDash"],
+        "data_model": "Kimball Star Schema with Real-Time Overlay (Dynamic Tables)",
+        "key_features": ["Snowpipe Streaming", "Cortex ML", "Marketplace (weather/foot traffic)", "Data Sharing"],
+    },
+    "Technology / SaaS": {
+        "top_use_cases": ["Product Analytics", "Multi-Tenant Analytics", "Usage-Based Billing", "ML Feature Store", "Customer Health Scoring"],
+        "peer_companies": ["Figma", "Notion", "Grammarly", "LiveRamp"],
+        "data_model": "Event-Driven Medallion with Multi-Tenant Isolation",
+        "key_features": ["Snowpipe Streaming", "Secure Data Sharing", "Reader Accounts", "Marketplace (Provider)"],
+    },
+    "Manufacturing": {
+        "top_use_cases": ["Predictive Maintenance", "Production Quality Analytics", "OEE Monitoring", "Supply Chain Optimization", "Energy & Sustainability"],
+        "peer_companies": ["Siemens", "Yamaha Motor", "Honeywell", "HP Inc."],
+        "data_model": "Medallion with IoT Time-Series Optimization",
+        "key_features": ["Snowpipe Streaming (IoT)", "Dynamic Tables", "Auto-clustering", "Marketplace (energy/weather)"],
+    },
+    "Telecommunications": {
+        "top_use_cases": ["Network Performance Analytics", "Churn Prediction", "Revenue Assurance", "5G / IoT Analytics", "Customer 360"],
+        "peer_companies": ["AT&T", "T-Mobile", "Vodafone", "DISH Network"],
+        "data_model": "Medallion with CDR/Event Optimization",
+        "key_features": ["Snowpipe Streaming", "Iceberg Tables", "Auto-clustering", "Cortex ML"],
+    },
+    "Media & Entertainment": {
+        "top_use_cases": ["Content Performance Analytics", "Audience Segmentation", "Ad Revenue Optimization", "Royalty Calculations", "Content Recommendations"],
+        "peer_companies": ["Warner Bros. Discovery", "NBC Universal", "Riot Games", "Sony Music"],
+        "data_model": "Event-Driven Star Schema with Content Catalog",
+        "key_features": ["Snowpipe Streaming", "Data Clean Rooms", "Marketplace (demographic data)", "Cortex ML"],
+    },
+    "Energy & Utilities": {
+        "top_use_cases": ["Smart Grid Analytics", "Predictive Maintenance", "Energy Trading Analytics", "Regulatory Compliance (NERC/FERC)", "ESG Reporting"],
+        "peer_companies": ["AES Corporation", "Constellation Energy", "Southern Company", "Duke Energy"],
+        "data_model": "Time-Series Optimized with IoT Layer",
+        "key_features": ["Snowpipe Streaming", "Dynamic Tables", "Marketplace (weather/commodity)", "Horizon"],
+    },
+    "Government / Public Sector": {
+        "top_use_cases": ["Citizen 360", "Fraud, Waste & Abuse Detection", "Open Data Platform", "Emergency Management", "FedRAMP-Compliant Analytics"],
+        "peer_companies": ["US Department of Defense", "State of Tennessee", "UK NHS"],
+        "data_model": "Medallion with Agency Isolation",
+        "key_features": ["Snowflake Government (FedRAMP)", "Secure Data Sharing", "Horizon", "Network Policies"],
+    },
+    "Education": {
+        "top_use_cases": ["Student Success Analytics", "Learning Analytics", "Enrollment Yield Optimization", "Institutional Research", "Research Data Platform"],
+        "peer_companies": ["Western Governors University", "2U / edX", "Chegg"],
+        "data_model": "Dimensional Model with Student-Centric Schema",
+        "key_features": ["Cortex ML", "Snowpark", "Data Sharing (inter-institutional)", "Streamlit dashboards"],
+    },
+    "Insurance": {
+        "top_use_cases": ["Claims Analytics & Fraud Detection", "Actuarial Modeling", "Policyholder 360", "Regulatory Reporting (Solvency II/IFRS 17)", "Telematics / Usage-Based Insurance"],
+        "peer_companies": ["Zurich Insurance", "Nationwide", "Swiss Re", "AXA"],
+        "data_model": "Dimensional Model with Actuarial Overlay",
+        "key_features": ["Cortex ML", "Snowpark Python", "Time Travel", "Horizon (lineage)"],
+    },
+    "Logistics & Supply Chain": {
+        "top_use_cases": ["Route Optimization", "Fleet Telematics", "Shipment Visibility", "Warehouse Analytics", "Demand Planning"],
+        "peer_companies": ["FedEx", "Maersk", "C.H. Robinson"],
+        "data_model": "Event-Driven with GPS/IoT Time-Series Layer",
+        "key_features": ["Snowpipe Streaming (GPS/IoT)", "Marketplace (traffic/weather)", "Cortex ML", "Data Sharing"],
+    },
+}
+
 st.set_page_config(layout="wide", page_title="Snowflake Migration Launchpad")
 
 with st.sidebar:
@@ -1900,6 +1975,50 @@ with tab7:
                 st.markdown(f"- **{label}:** {val[:200]}{'...' if len(val) > 200 else ''}")
     else:
         st.info("No architecture nuances provided yet. Consider filling in Tab 6.")
+
+    st.divider()
+
+    _ind_val = cust.get("industry", "")
+    _ind_intel = INDUSTRY_INTELLIGENCE.get(_ind_val)
+    if _ind_intel:
+        st.markdown(
+            '<div class="section-header">Industry Intelligence Preview</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f'<div style="padding:14px 18px;border-radius:8px;margin-bottom:1rem;font-size:0.88rem;'
+            f'line-height:1.5;border-left:4px solid #B3D943;background:rgba(179,217,67,0.06);">'
+            f'Based on the <strong>{_ind_val}</strong> vertical, CoCo will include industry-specific '
+            f'use cases, peer customer stories, and a tailored data model in the migration plan. '
+            f'Companies like <strong>{", ".join(_ind_intel["peer_companies"][:3])}</strong> have '
+            f'successfully migrated to Snowflake from similar source systems.</div>',
+            unsafe_allow_html=True,
+        )
+
+        _uc_col, _peer_col = st.columns(2)
+        with _uc_col:
+            st.markdown("**Post-Migration Use Cases CoCo Will Recommend:**")
+            for _uc in _ind_intel["top_use_cases"]:
+                st.markdown(f"- {_uc}")
+        with _peer_col:
+            st.markdown("**Peer Companies on Snowflake:**")
+            for _pc in _ind_intel["peer_companies"]:
+                st.markdown(f"- {_pc}")
+
+        _dm_col, _feat_col = st.columns(2)
+        with _dm_col:
+            st.markdown(f'**Recommended Data Model:** {_ind_intel["data_model"]}')
+        with _feat_col:
+            st.markdown(f'**Key Snowflake Features:** {", ".join(_ind_intel["key_features"][:4])}')
+    elif _ind_val:
+        st.markdown(
+            '<div class="section-header">Industry Intelligence Preview</div>',
+            unsafe_allow_html=True,
+        )
+        st.info(
+            f'Industry "{_ind_val}" will be matched to the closest vertical in CoCo\'s knowledge base '
+            f'when generating the migration plan.'
+        )
 
     st.divider()
 
